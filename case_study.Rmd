@@ -1,0 +1,84 @@
+---
+title: "case study"
+author: Yiyao LI
+output: github_document
+---
+
+```{r setup}
+library(tidyverse)
+library(p8105.datasets)
+library(leaflet)
+data(nyc_airbnb)
+```
+
+## Brainstorm some questions
+
+1. What's the best Airbnb in staten island for< $100
+2. What price range is popular in each borough? most rented?
+3. What apartment features are related to price?
+4. cheapest room type in each neighborhood?
+5. hosts have higher ratings?
+
+
+
+## Answer the questions
+
+clean the data
+convert the scores to the stars
+
+```{r}
+nyc_airbnb =
+  nyc_airbnb %>%
+  mutate(stars = review_scores_location/2)
+```
+
+group by the neighbourhood group and room type 
+
+```{r}
+nyc_airbnb %>%
+  count(neighbourhood_group, room_type) %>% 
+  pivot_wider(names_from = room_type, values_from = n)
+```
+
+get some information about the relationship between price and the features of the rooms.
+
+```{r}
+nyc_airbnb %>%
+  group_by(neighbourhood_group, room_type) %>% 
+  summarize(mean_price = mean(price))
+```
+
+find the romm price difference in Manhattan's different neighbourhoods.
+
+```{r}
+nyc_airbnb %>%
+  filter(neighbourhood_group == "Manhattan") %>% 
+  count(neighbourhood)
+  
+nyc_airbnb %>%
+  filter(
+    price < 1000,
+    neighbourhood_group == "Manhattan") %>% 
+  mutate(neighbourhood = fct_reorder(neighbourhood, price)) %>% 
+  ggplot(aes(x = neighbourhood, y = price)) +
+    geom_boxplot()+
+    coord_flip()
+```
+
+```{r}
+nyc_airbnb %>% 
+  sample_n(1000) %>% 
+  ggplot(aes(x = lat, y = long, color = price)) +
+  geom_point()
+```
+
+```{r}
+pal <- colorNumeric("viridis", nyc_airbnb %>% pull(stars))
+
+nyc_airbnb %>% 
+  sample_n(5000) %>% 
+  leaflet()
+  addProviderTiles(providers$CartoDB.Position) %>%
+  addCircleMarkers(~lat, ~long, radius = 1, color =~ pal(stars))
+```
+
